@@ -28,6 +28,11 @@
 # #####################################################################
 
 
+#add-ons
+#Moving platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
+#		     the player is not connected to the platform, the player needs to keep adjsting movement keys to keep up with the platform
+#win cond.... the player must survive
+
 .eqv  BASE_ADDRESS 0x10008000
 
 .eqv  base_out 0xff00baff
@@ -373,16 +378,15 @@ respond_to_p:
 	
 respond_to_w:
 	
+
 	
 	add $t3, $zero, $s0
-	
-	
 	
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
 	jal remove_prev_char
 	
-	addi $s0, $s0, -256
+	addi $s0, $s0, -3328
 	
 	add $t3, $zero, $s0
 	addi $sp, $sp, -4
@@ -410,7 +414,7 @@ respond_to_a:
 	sw $t3, 0($sp)
 	jal remove_prev_char
 	
-	addi $s0, $s0, -4
+	addi $s0, $s0, -8
 	
 	add $t3, $zero, $s0
 	addi $sp, $sp, -4
@@ -438,7 +442,7 @@ respond_to_d:
 	sw $t3, 0($sp)
 	jal remove_prev_char
 	
-	addi $s0, $s0, 4
+	addi $s0, $s0, 8
 	
 	add $t3, $zero, $s0
 	addi $sp, $sp, -4
@@ -543,7 +547,52 @@ draw_m2: #slow one
 	sw $t1, -256($t5)
 	
 	jr $ra
+
+track_gravity:
+	li $t0, BASE_ADDRESS	
+	addi $t5, $s0, 1028
+	add  $t5, $t5, $t0
 	
+	li $t1, base_out
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, jump_cont
+	
+	addi $t5, $s0, 1020
+	add  $t5, $t5, $t0
+	
+	li $t1, base_out
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, jump_cont
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal draw_ground_sky
+	
+	addi $sp, $sp, -4
+	sw $s0, 0($sp)
+	jal remove_prev_char
+	
+	addi $s0, $s0, 256
+	
+	add $t3, $zero, $s0
+	addi $sp, $sp, -4
+	sw $s0 0($sp)
+	
+	jal draw_char
+	
+	
+exit_grav:
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	j cont
+	
+jump_cont:
+	jr $ra
+
 main:  
 	jal draw_map_ground
 	jal draw_lava
@@ -558,13 +607,15 @@ main:
 	
 	jal draw_char
 	
-main_loop:	
 	
+	
+main_loop:	
+	jal track_gravity
 	jal check_char_move
+	
 	#addi $t3, $zero, 3428
 	#addi $sp, $sp, -4
 	#sw $t3, 0($sp)
-
 	
 	#jal draw_m1
 	
@@ -574,7 +625,7 @@ main_loop:
 	
 	#jal draw_m2
 	
-	li $v0, 32
+cont:	li $v0, 32
 	li $a0, 40 # Wait one second (1000 milliseconds) 
 	syscall
 	
