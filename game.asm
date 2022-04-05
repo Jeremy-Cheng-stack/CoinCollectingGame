@@ -29,9 +29,12 @@
 
 
 #add-ons
-#Moving platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
+#(2)Moving platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
 #		     the player is not connected to the platform, the player needs to keep adjsting movement keys to keep up with the platform
-#win cond.... the player must survive
+#(1)win cond.... the player must survive for 1 min
+#(1)lose cond... the player gets hit by meteor or falls into lava
+#(2)Moving objects... metoer fall from the sky which the player has to avoid
+#(2) Track health?
 
 .eqv  BASE_ADDRESS 0x10008000
 
@@ -50,10 +53,18 @@
 .eqv m1c 0xCD853F
 .eqv m2c 0xffd000ff
 
-
 .eqv key_press 0xffff0000
 
+.data
+
+met_spawns:     .word 520,540
+
+.text
+
 #use s0 to store character position
+#use s2  to store char speed
+#use array for postiion of metoer, svaed register for current ones on board
+# use s3 to hold the array of met_spawns
 j main
 
 reset_screen_black:
@@ -283,7 +294,7 @@ LOOP3:	bge $t3, $t4, EXIT3 #Drawing inside
 EXIT3:
 	jr $ra
 	
-remove_prev_char:
+remove_prev_char: # draws the character shape at a specific location all black
 	li $t0, BASE_ADDRESS
 	lw $t2, 0($sp)
 	addi $sp, $sp, 4
@@ -312,7 +323,7 @@ remove_prev_char:
 	sw $t1, -252($t5)
 	jr $ra
 	
-draw_char: #Requires the amount of displacement required
+draw_char: #Requires the new location of character to draw it out
 	li $t0, BASE_ADDRESS
 	lw $t2, 0($sp)
 	addi $sp, $sp, 4
@@ -331,17 +342,17 @@ draw_char: #Requires the amount of displacement required
 	sw $t1, 772($t5)
 	sw $t1, 764($t5)
 	
-	li $t1, charC2
+	li $t1, charC1
 	sw $t1, -512($t5)
 	
-	li $t1, charC3
+	li $t1, charC1
 	sw $t1, -260($t5)
 	
-	li $t1, charC4
+	li $t1, charC1
 	sw $t1, -252($t5)
 	jr $ra
 
-check_char_move:
+check_char_move: # Check if a button on the keyboard was pressed so you would have to move the character to a different location
 	li $t9, 0xffff0000
 	lw $t8, 0($t9)
 	beq $t8, 1, keypress_w
@@ -376,7 +387,7 @@ respond_to_p:
 	
 	j main
 	
-respond_to_w:
+respond_to_w:# if the w button was pressed
 	
 
 	
@@ -400,7 +411,7 @@ exit_w:
 	
 	jr $ra
 
-respond_to_a:
+respond_to_a:# if the a button was pressed
 	
 	
 	add $t3, $zero, $s0
@@ -414,9 +425,15 @@ respond_to_a:
 	sw $t3, 0($sp)
 	jal remove_prev_char
 	
-	addi $s0, $s0, -8
+	addi $t8,$zero, -1
 	
-	add $t3, $zero, $s0
+	mult $t8, $s2
+	mflo $t9
+	
+	add $t7, $s0, $t9
+	add $s0, $s0, $t9
+	
+	add $t3, $zero, $t7
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
 	
@@ -428,7 +445,7 @@ exit_a:
 	
 	jr $ra
 
-respond_to_d:
+respond_to_d: # if the d button was pressed
 	
 	
 	add $t3, $zero, $s0
@@ -442,7 +459,7 @@ respond_to_d:
 	sw $t3, 0($sp)
 	jal remove_prev_char
 	
-	addi $s0, $s0, 8
+	add $s0, $s0, $s2
 	
 	add $t3, $zero, $s0
 	addi $sp, $sp, -4
@@ -455,8 +472,35 @@ exit_d:
 	addi $sp, $sp, 4
 	
 	jr $ra
-
-draw_m1: #fast one
+black_m1:
+	li $t0, BASE_ADDRESS
+	lw $t2, 0($sp)
+	addi $sp, $sp, 4
+	add $t5, $t0, $t2
+	
+	li $t1, black
+	sw $t1, -256($t5)
+	sw $t1, 256($t5)
+	sw $t1, 260($t5)
+	sw $t1, 4($t5)
+	sw $t1, -4($t5)
+	sw $t1, 516($t5)
+	sw $t1, 508($t5)
+	sw $t1, -516($t5)
+	sw $t1, -508($t5)
+	sw $t1, 264($t5)
+	sw $t1, 252($t5)
+	sw $t1, 248($t5)
+	sw $t1, -260($t5)
+	sw $t1, -264($t5)
+	sw $t1, -252($t5)
+	sw $t1, -248($t5)
+	
+	li $t1, black
+	sw $t1, 0($t5)
+	
+	jr $ra
+draw_m1: #fast one  (on the 512 line.... min 520, max 760)
 	li $t0, BASE_ADDRESS
 	lw $t2, 0($sp)
 	addi $sp, $sp, 4
@@ -485,68 +529,35 @@ draw_m1: #fast one
 	
 	jr $ra
 
-draw_m2: #slow one
+
+meteor_fall:
 	li $t0, BASE_ADDRESS
 	
 	lw $t2, 0($sp)
 	addi $sp, $sp, 4
-	add $t5, $t0, $t2
 	
-	li $t1, m2c
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
 	
-	sw $t1, 0($t5)
-	sw $t1, -4($t5)
-	sw $t1, -260($t5)
-	sw $t1, -516($t5)
-	sw $t1, -512($t5)
-	sw $t1, -508($t5)
-	sw $t1, -504($t5)
+	addi $sp, $sp, -4
+	sw $t2, 0($sp)
 	
-	sw $t1, -248($t5)
-	sw $t1, -244($t5)
+	jal black_m1
 	
-	sw $t1, 12($t5)
-	sw $t1, 16($t5)
-	sw $t1, 268($t5)
-	sw $t1, 524($t5)
-	sw $t1, 520($t5)
-	sw $t1, 516($t5)
-	sw $t1, 512($t5)
-	sw $t1, 508($t5)
-	sw $t1, 504($t5)
-	sw $t1, 500($t5)
+	addi $t2, $t2, 256
 	
-	sw $t1, 244($t5)
-	sw $t1, -12($t5)
-	sw $t1, -16($t5)
-	sw $t1, -272($t5)
-	sw $t1, -268($t5)
-	sw $t1, -524($t5)
-	sw $t1, -780($t5)
-	sw $t1, -776($t5)
+	addi $sp, $sp, -4
+	sw $t2, 0($sp)
 	
-	sw $t1, -1032($t5)
+	jal draw_m1
 	
-	sw $t1, -1288($t5)
-	sw $t1, -1284($t5)
+	add $s1, $s1, 256
 	
-	sw $t1, -1280($t5)
-	sw $t1, -1024($t5)
-	sw $t1, -1276($t5)
-	sw $t1, -1532($t5)
-	sw $t1, -1272($t5)
-	sw $t1, -1268($t5)
-	sw $t1, -1008($t5)
-	sw $t1, -1012($t5)
-	sw $t1, -752($t5)
-
-	sw $t1, 772($t5)
-	sw $t1, 768($t5)
-	
-	li $t1, charC3
-	sw $t1, -256($t5)
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
 	
 	jr $ra
+
 
 track_gravity:
 	li $t0, BASE_ADDRESS	
@@ -556,7 +567,7 @@ track_gravity:
 	li $t1, base_out
 	lw $t6, 0($t5)
 	
-	beq $t1, $t6, jump_cont
+	beq $t1, $t6, jump_cont # check if player is in sky
 	
 	addi $t5, $s0, 1020
 	add  $t5, $t5, $t0
@@ -564,7 +575,7 @@ track_gravity:
 	li $t1, base_out
 	lw $t6, 0($t5)
 	
-	beq $t1, $t6, jump_cont
+	beq $t1, $t6, jump_cont# check if player is in sky
 	
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
@@ -584,22 +595,139 @@ track_gravity:
 	jal draw_char
 	
 	
-exit_grav:
+exit_grav: #character has been moved down one space
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	j cont
+	j cont1
 	
-jump_cont:
+jump_cont: # if player not in sky
 	jr $ra
 
+check_meteor:
+	li $t0, BASE_ADDRESS
+	
+	lw $t2, 0($sp)
+	addi $sp, $sp, 4
+	
+	addi $t5, $t2, 768
+	add  $t5, $t5, $t0
+	
+	li $t1, base_out
+	lw $t6, 0($t5)
+	
+	bne $t1, $t6, meteor_N
+	
+	
+	
+	add $t3, $zero, $t2
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal black_m1
+	
+	add $s1,$zero, 520
+	j cont2
+	
+
+meteor_N:
+	jr $ra
+
+check_lava_death:
+	li $t0, BASE_ADDRESS	
+	addi $t5, $s0, 1028
+	add  $t5, $t5, $t0
+	
+	li $t1, fire_out
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, ju_end
+	
+	jr $ra
+
+
+ju_end:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal respond_to_p
+
+
+check_player_hit:
+	li $t0, BASE_ADDRESS
+	
+	addi $t5, $s0, -520 #Spot 1
+	add  $t5, $t5, $t0
+	
+	li $t1, m1c
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_met
+	
+	addi $t5, $s0, -504 #Spot 2
+	add  $t5, $t5, $t0
+	
+	li $t1, m1c
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_met
+	
+	addi $t5, $s0, -772 #Spot 3
+	add  $t5, $t5, $t0
+	
+	li $t1, m1c
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_met
+	
+	addi $t5, $s0, -764 #Spot 4
+	add  $t5, $t5, $t0
+	
+	li $t1, m1c
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_met
+	
+	
+	addi $t5, $s0, 8 #Spot 1 -BOOST
+	add  $t5, $t5, $t0
+	
+	li $t1, m2c
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_boost
+	
+	addi $t5, $s0, -8 #Spot 2 - BOOST
+	add  $t5, $t5, $t0
+	
+	li $t1, m2c
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_boost
+	
+	jr $ra
+
+p_hit_met:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal respond_to_p
+	
+
+p_hit_boost:
+	addi $s2, $s2, 8
+	jr $ra
 main:  
 	jal draw_map_ground
 	jal draw_lava
 	
 	jal draw_ground_sky
 	
+	
+	
 	addi $s0, $zero,11648
+	
+	addi $s2, $zero, 4
 	
 	add $t3, $zero, $s0
 	addi $sp, $sp, -4
@@ -607,6 +735,13 @@ main:
 	
 	jal draw_char
 	
+	addi $s1,$zero, 520
+	
+	add $t3, $zero, $s1
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal draw_m1
 	
 	
 main_loop:	
@@ -625,7 +760,24 @@ main_loop:
 	
 	#jal draw_m2
 	
-cont:	li $v0, 32
+cont1:	
+	add $t3, $zero, $s1
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal check_meteor
+	
+	
+	add $t3, $zero, $s1
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal meteor_fall
+	
+	jal check_player_hit
+	
+	
+cont2:	jal check_lava_death
+	
+	li $v0, 32
 	li $a0, 40 # Wait one second (1000 milliseconds) 
 	syscall
 	
