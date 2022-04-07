@@ -51,13 +51,14 @@
 .eqv black 0x000000
 
 .eqv m1c 0xCD853F
-.eqv m2c 0xffd000ff
+.eqv m2c 0xffe200e8
 
 .eqv key_press 0xffff0000
 
 .data
 
-met_spawns:     .word 520,540
+met_spawns:     .word 524,544
+met_location:   .word 524,544
 
 .text
 
@@ -86,7 +87,54 @@ reset_screen_loop:
 reset_exit:
 	jr $ra
 	
+draw_mushroom:
+	li $t0, BASE_ADDRESS
+	li $t1, m2c
 	
+	lw $t2, 0($sp)
+	addi $sp, $sp, 4
+	
+	add $t5, $t2, $t0
+	
+	sw $t1, 0($t5)
+	sw $t1, 4($t5)
+	sw $t1, 8($t5)
+	sw $t1, -4($t5)
+	sw $t1, -8($t5)
+	
+	sw $t1, 256($t5)
+	sw $t1, 512($t5)
+	
+	sw $t1, -256($t5)
+	sw $t1, -252($t5)
+	sw $t1, -260($t5)
+	
+	jr $ra
+	
+	
+black_mushroom:
+	li $t0, BASE_ADDRESS
+	li $t1, black
+	
+	lw $t2, 0($sp)
+	addi $sp, $sp, 4
+	
+	add $t5, $t2, $t0
+	
+	sw $t1, 0($t5)
+	sw $t1, 4($t5)
+	sw $t1, 8($t5)
+	sw $t1, -4($t5)
+	sw $t1, -8($t5)
+	
+	sw $t1, 256($t5)
+	sw $t1, 512($t5)
+	
+	sw $t1, -256($t5)
+	sw $t1, -252($t5)
+	sw $t1, -260($t5)
+	
+	jr $ra
 #DRAWING THE TWO GROUNDS 
 draw_map_ground: 	
 	li $t0, BASE_ADDRESS
@@ -419,6 +467,9 @@ respond_to_a:# if the a button was pressed
 	addi $t3, $t3, -4
 	addi $t4,$zero, 13828
 	beq $t4, $t3, exit_a
+	addi $t4,$zero, 13824
+	beq $t4, $t3, exit_a
+	
 	addi $t3, $t3, 4
 	
 	addi $sp, $sp, -4
@@ -453,6 +504,13 @@ respond_to_d: # if the d button was pressed
 	addi $t3, $t3, 4
 	addi $t4,$zero, 14076
 	beq $t4, $t3, exit_d
+	
+	addi $t4,$zero, 14072
+	beq $t4, $t3, exit_d
+	
+	addi $t4,$zero, 14068
+	beq $t4, $t3, exit_d
+	
 	addi $t3, $t3, -4
 	
 	addi $sp, $sp, -4
@@ -626,7 +684,7 @@ check_meteor:
 	
 	jal black_m1
 	
-	add $s1,$zero, 520
+	add $s1,$zero, 524
 	j cont2
 	
 
@@ -715,6 +773,18 @@ p_hit_met:
 	
 
 p_hit_boost:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	add $t3, $zero, 14256
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)	
+	
+	jal black_mushroom
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
 	addi $s2, $s2, 8
 	jr $ra
 main:  
@@ -723,7 +793,10 @@ main:
 	
 	jal draw_ground_sky
 	
-	
+	add $t3, $zero, 14256
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal draw_mushroom
 	
 	addi $s0, $zero,11648
 	
@@ -735,7 +808,7 @@ main:
 	
 	jal draw_char
 	
-	addi $s1,$zero, 520
+	addi $s1,$zero, 524
 	
 	add $t3, $zero, $s1
 	addi $sp, $sp, -4
@@ -778,7 +851,7 @@ cont1:
 cont2:	jal check_lava_death
 	
 	li $v0, 32
-	li $a0, 40 # Wait one second (1000 milliseconds) 
+	li $a0, 40 # 40 recommeneded
 	syscall
 	
 	j main_loop
