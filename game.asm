@@ -29,12 +29,13 @@
 
 
 #add-ons
-#(2)Moving platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
+#(1)Disappear platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
 #		     the player is not connected to the platform, the player needs to keep adjsting movement keys to keep up with the platform
 #(1)win cond.... the player must survive for 1 min
 #(1)lose cond... the player gets hit by meteor or falls into lava
 #(2)Moving objects... metoer fall from the sky which the player has to avoid
-#(2) Track health?
+#(2) Track score
+#(2) Pick up effects
 
 .eqv  BASE_ADDRESS 0x10008000
 
@@ -49,6 +50,8 @@
 .eqv charC4 0x0000ff
 
 .eqv black 0x000000
+.eqv gold 0xFFD700
+.eqv white 0xffffffff
 
 .eqv m1c 0xCD853F
 .eqv m2c 0xffe200e8
@@ -57,8 +60,11 @@
 
 .data
 
-met_spawns:     .word 524,544
-met_location:   .word 524,544
+coin_spawns:     .word 
+counter: 	 .word 0:1
+on: 	 .word 1:1
+
+
 
 .text
 
@@ -111,7 +117,60 @@ draw_mushroom:
 	
 	jr $ra
 	
+GG_screen:
+	li $t0, BASE_ADDRESS
+	li $t1, white
+	#256 * 28
 	
+	addi $t5, $t0, 7268
+	
+	sw $t1, 0($t5)
+	sw $t1, 4($t5)
+	sw $t1, 8($t5)
+	
+	sw $t1, 264($t5)
+	sw $t1, 520($t5)
+	
+	sw $t1, 516($t5)
+	sw $t1, 512($t5)
+	sw $t1, 508($t5)
+	sw $t1, 504($t5)
+	
+	sw $t1, 248($t5)
+	sw $t1, -8($t5)
+	sw $t1, -264($t5)
+	sw $t1, -520($t5)
+	
+	sw $t1, -516($t5)
+	sw $t1, -512($t5)
+	sw $t1, -508($t5)
+	sw $t1, -504($t5)
+	
+	addi $t5, $t0, 7308
+	
+	sw $t1, 0($t5)
+	sw $t1, 4($t5)
+	sw $t1, 8($t5)
+	
+	sw $t1, 264($t5)
+	sw $t1, 520($t5)
+	
+	sw $t1, 516($t5)
+	sw $t1, 512($t5)
+	sw $t1, 508($t5)
+	sw $t1, 504($t5)
+	
+	sw $t1, 248($t5)
+	sw $t1, -8($t5)
+	sw $t1, -264($t5)
+	sw $t1, -520($t5)
+	
+	sw $t1, -516($t5)
+	sw $t1, -512($t5)
+	sw $t1, -508($t5)
+	sw $t1, -504($t5)
+	
+	jr $ra
 black_mushroom:
 	li $t0, BASE_ADDRESS
 	li $t1, black
@@ -319,6 +378,8 @@ draw_ground_sky:
 	
 	jr $ra
 	
+	
+
 #draw the lava area 	
 draw_lava:
 	li $t0, BASE_ADDRESS
@@ -430,6 +491,14 @@ respond_to_p:
 	
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
+	
+	jal reset_screen_black
+	
+	jal GG_screen
+	
+	li $v0, 32
+	li $a0, 5000 # 40 recommeneded
+	syscall
 	
 	jal reset_screen_black
 	
@@ -609,7 +678,6 @@ meteor_fall:
 	
 	jal draw_m1
 	
-	add $s1, $s1, 256
 	
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
@@ -674,22 +742,59 @@ check_meteor:
 	li $t1, base_out
 	lw $t6, 0($t5)
 	
-	bne $t1, $t6, meteor_N
+	beq $t1, $t6, meteor_B
+	li $t1, m2c
+	beq $t1, $t6, meteor_B
 	
-	
-	
-	add $t3, $zero, $t2
+	jr $ra
+
+meteor_B:	
+	add $t3, $zero, $s1
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
 	
 	jal black_m1
 	
-	add $s1,$zero, 524
-	j cont2
+	addi $t2, $t2, 44
 	
+	add $t3, $zero, $s3
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal black_m1
+	
+	addi $t2, $t2, 52
+	
+	add $t3, $zero, $s4
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal black_m1
+	
+	addi $t2, $t2, 60
+	
+	add $t3, $zero, $s5
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal black_m1
+	
+	addi $t2, $t2, 60
+	
+	add $t3, $zero, $s6
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal black_m1
+	
+	addi $s1,$zero, 532
+	addi $s3,$zero, 576
+	addi $s4,$zero, 628
+	addi $s5,$zero, 688
+	addi $s6,$zero, 748
+	
+	j cont2
 
-meteor_N:
-	jr $ra
 
 check_lava_death:
 	li $t0, BASE_ADDRESS	
@@ -776,7 +881,7 @@ p_hit_boost:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
-	add $t3, $zero, 14256
+	add $t3, $zero, 14248
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)	
 	
@@ -787,13 +892,16 @@ p_hit_boost:
 	
 	addi $s2, $s2, 8
 	jr $ra
+	
+	
+#Use t9 as counter
 main:  
 	jal draw_map_ground
 	jal draw_lava
 	
 	jal draw_ground_sky
 	
-	add $t3, $zero, 14256
+	add $t3, $zero, 14248
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
 	jal draw_mushroom
@@ -808,7 +916,13 @@ main:
 	
 	jal draw_char
 	
-	addi $s1,$zero, 524
+#RESET METEOR	
+	addi $s1,$zero, 532
+	addi $s3,$zero, 576
+	addi $s4,$zero, 628
+	addi $s5,$zero, 688
+	addi $s6,$zero, 748
+	
 	
 	add $t3, $zero, $s1
 	addi $sp, $sp, -4
@@ -817,7 +931,59 @@ main:
 	jal draw_m1
 	
 	
-main_loop:	
+	add $t3, $zero, $s3
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal draw_m1
+	
+	add $t3, $zero, $s4
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal draw_m1
+	
+	add $t3, $zero, $s5
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal draw_m1
+	
+	add $t3, $zero, $s6
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	
+	jal draw_m1
+	
+	
+main_loop:
+	la $t9, counter
+	lw $t7, 0($t9)
+	addi $t8, $zero, 2000
+	bne $t7, $t8, cont3
+	
+	addi $t8, $zero, 0
+	sw $t8, 0($t9)
+	
+	la $t6, on
+	lw $t5, 0($t6)
+	addi $t8, $zero, 0
+	bne $t5, $t8, else32
+	
+	jal draw_ground_sky
+	j cont3
+	
+else32:	
+	jal ground_sky_black
+	#lw$t5, 0($t4)# $t5 = B[i]
+	#sw$t5, 0($t3)# A[i] = $t5
+cont3:
+	la $t9, counter
+	lw $t7, 0($t9)
+	
+	addi $t8, $t7, 1
+	sw $t8, 0($t9)
+	
 	jal track_gravity
 	jal check_char_move
 	
@@ -839,11 +1005,60 @@ cont1:
 	sw $t3, 0($sp)
 	jal check_meteor
 	
+	add $t3, $zero, $s3
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal check_meteor
+	
+	add $t3, $zero, $s4
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal check_meteor
+	
+	add $t3, $zero, $s5
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal check_meteor
+	
+	add $t3, $zero, $s6
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal check_meteor
+	
+	
+	####
+	
+	
+	add $t3, $zero, $s3
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal meteor_fall
+	add $s3, $s3, 256
+	
+	add $t3, $zero, $s4
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal meteor_fall
+	add $s4, $s4, 256
+	
+	add $t3, $zero, $s5
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal meteor_fall
+	add $s5, $s5, 256
+	
+	add $t3, $zero, $s6
+	addi $sp, $sp, -4
+	sw $t3, 0($sp)
+	jal meteor_fall
+	add $s6, $s6, 256
+	
 	
 	add $t3, $zero, $s1
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
 	jal meteor_fall
+	add $s1, $s1, 256
 	
 	jal check_player_hit
 	
