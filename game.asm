@@ -60,7 +60,6 @@
 
 .data
 
-coin_spawns:     .word 
 counter: 	 .word 0:1
 on: 	 .word 1:1
 win_count: 	 .word 0:1
@@ -74,6 +73,41 @@ win_count: 	 .word 0:1
 # use s3 to hold the array of met_spawns
 j main
 
+draw_collected_coin:
+	li $t0, BASE_ADDRESS
+	li $t1, gold
+	
+	la $t6, win_count
+	lw $t8, 0($t6)
+	
+	addi $t5, $zero, 1
+	
+	beq $t5, $t8, collect1
+	
+	addi $t5, $zero, 2
+	
+	beq $t5, $t8, collect2
+	
+	addi $t5, $zero, 3
+	
+	beq $t5, $t8, collect3
+	
+	addi $t5, $zero, 4
+	
+	beq $t5, $t8, collect4
+	
+collect1:
+	sw $t1, 15804($t0)
+	jr $ra
+collect2:
+	sw $t1, 15820($t0)
+	jr $ra
+collect3:
+	sw $t1, 15836($t0)
+	jr $ra
+collect4:
+	sw $t1, 15852($t0)
+	jr $ra
 
 
 draw_coin:
@@ -942,12 +976,52 @@ check_player_hit:
 	
 	beq $t1, $t6, p_hit_coin
 	
+	addi $t5, $s0, 256 #Spot 3 - coin
+	add  $t5, $t5, $t0
+	
+	li $t1, gold
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_coin
+	
+	addi $t5, $s0, 0 #Spot 4 - coin
+	add  $t5, $t5, $t0
+	
+	li $t1, gold
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_coin
+	
+	addi $t5, $s0, 252 #Spot 5 - coin
+	add  $t5, $t5, $t0
+	
+	li $t1, gold
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_coin
+	
+	addi $t5, $s0, 260 #Spot 6 - coin
+	add  $t5, $t5, $t0
+	
+	li $t1, gold
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_coin
+	
 	jr $ra
 	
 p_hit_coin:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
+	
+	la $t6, win_count
+	lw $t8, 0($t6)
+	addi $t8, $t8, 1
+	sw $t8, 0($t6)
+	
+	jal check_win
+	jal draw_collected_coin
 	addi $t8, $zero, 1
 	
 	bne $t8, $s7, elseer
@@ -994,10 +1068,102 @@ p_hit_boost:
 	
 	addi $s2, $s2, 8
 	jr $ra
+		
+draw_win_screen:
+	li $t0, BASE_ADDRESS
+	li $t1, base_out
 	
+	jal reset_screen_black
+	
+	#DRAW WIN SREEBN here
+	li $t1, gold
+	#256 * 28
+	
+	addi $t5, $t0, 7268
+	
+	sw $t1, 0($t5)
+	sw $t1, 4($t5)
+	sw $t1, 8($t5)
+	
+	sw $t1, 264($t5)
+	sw $t1, 520($t5)
+	
+	sw $t1, 516($t5)
+	sw $t1, 512($t5)
+	sw $t1, 508($t5)
+	sw $t1, 504($t5)
+	
+	sw $t1, 248($t5)
+	sw $t1, -8($t5)
+	sw $t1, -264($t5)
+	sw $t1, -520($t5)
+	
+	sw $t1, -516($t5)
+	sw $t1, -512($t5)
+	sw $t1, -508($t5)
+	sw $t1, -504($t5)
+	
+	addi $t5, $t0, 7308
+	
+	sw $t1, 0($t5)
+	sw $t1, 4($t5)
+	sw $t1, 8($t5)
+	
+	sw $t1, 264($t5)
+	sw $t1, 520($t5)
+	
+	sw $t1, 516($t5)
+	sw $t1, 512($t5)
+	sw $t1, 508($t5)
+	sw $t1, 504($t5)
+	
+	sw $t1, 248($t5)
+	sw $t1, -8($t5)
+	sw $t1, -264($t5)
+	sw $t1, -520($t5)
+	
+	sw $t1, -516($t5)
+	sw $t1, -512($t5)
+	sw $t1, -508($t5)
+	sw $t1, -504($t5)
+	
+	li $v0, 32
+	li $a0, 5000 # 40 recommeneded
+	syscall
+	
+	jal reset_screen_black
+	
+	j main
+	
+	
+check_win:
+	la $t6, win_count
+	lw $t5, 0($t6)
+	
+	addi $t8, $zero, 3 # CHange this to change the amount of tokens to collect
+	
+	beq $t8, $t5, WINNNER
+	
+	jr $ra
+	
+WINNNER:
+	jal draw_win_screen
 	
 #Use t9 as counter
 main:  
+	la $t0, counter
+	addi $t2, $zero, 0
+	sw $t2, 0($t0)
+	
+	la $t0, on
+	addi $t2, $zero, 1
+	sw $t2, 0($t0)
+	
+	la $t0, win_count
+	addi $t2, $zero, 0
+	sw $t2, 0($t0)
+	
+	
 	jal draw_map_ground
 	jal draw_lava
 	
