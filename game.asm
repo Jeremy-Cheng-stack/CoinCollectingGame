@@ -32,8 +32,8 @@
 #(1)Disappear platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
 #		     the player is not connected to the platform, the player needs to keep adjsting movement keys to keep up with the platform
 #(1)win cond.... the player must survive for 1 min
-#(1)lose cond... the player gets hit by meteor or falls into lava
-#(2)Moving objects... metoer fall from the sky which the player has to avoid
+#(1)lose cond... the player gets hit by meteor or falls into lava  !!!!!!
+#(2)Moving objects... metoer fall from the sky which the player has to avoid  !!!!!
 #(2) Track score
 #(2) Pick up effects
 
@@ -63,7 +63,7 @@
 coin_spawns:     .word 
 counter: 	 .word 0:1
 on: 	 .word 1:1
-
+L_R:	.word 1:1 # 1 for right and 0 for left
 
 
 .text
@@ -73,6 +73,41 @@ on: 	 .word 1:1
 #use array for postiion of metoer, svaed register for current ones on board
 # use s3 to hold the array of met_spawns
 j main
+
+
+
+draw_coin:
+	li $t0, BASE_ADDRESS
+	
+	
+	la $t6, L_R
+	lw $t5, 0($t6)
+	
+	addi $t8, $zero, 0
+	bne $t5, $t8, else5
+	
+	li $t1, gold
+	#on the right 14252
+	sw $t1, 14300($t0)
+	sw $t1, 14556($t0)
+	sw $t1, 14560($t0)
+	sw $t1, 14552($t0)
+	
+	j cont5
+	
+else5:	
+	#on the left
+	li $t1, gold
+	sw $t1, 14124($t0)
+	sw $t1, 14380($t0)
+	sw $t1, 14384($t0)
+	sw $t1, 14376($t0)
+	
+	
+
+cont5:
+	jr $ra
+	
 
 reset_screen_black:
 	li $t0, BASE_ADDRESS
@@ -706,7 +741,21 @@ track_gravity:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
+	la $t6, on
+	lw $t5, 0($t6)
+	addi $t8, $zero, 1
+	bne $t5, $t8, else3
+	
 	jal draw_ground_sky
+	j cont4
+	
+else3:	
+	
+	jal ground_sky_black
+
+	
+	
+cont4:	
 	
 	addi $sp, $sp, -4
 	sw $s0, 0($sp)
@@ -810,6 +859,7 @@ check_lava_death:
 
 
 ju_end:
+	
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
@@ -868,6 +918,43 @@ check_player_hit:
 	
 	beq $t1, $t6, p_hit_boost
 	
+	addi $t5, $s0, -8 #Spot 3 - coin
+	add  $t5, $t5, $t0
+	
+	li $t1, gold
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_coin
+	
+	addi $t5, $s0, 8 #Spot 3 - coin
+	add  $t5, $t5, $t0
+	
+	li $t1, coin
+	lw $t6, 0($t5)
+	
+	beq $t1, $t6, p_hit_coin
+	
+	jr $ra
+	
+p_hit_coin:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	la $t6, L_R
+	lw $t5, 0($t6)
+	addi $t8, $zero, 1
+	
+	bne $t8, $t5, elseer
+	sw $t8, 0($t6)
+elseer:	
+	addi $t8, $zero, 0
+	sw $t8, 0($t6)
+	
+	jal draw_coin
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
 	jr $ra
 
 p_hit_met:
@@ -881,7 +968,7 @@ p_hit_boost:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
-	add $t3, $zero, 14248
+	add $t3, $zero, 14252
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)	
 	
@@ -901,7 +988,9 @@ main:
 	
 	jal draw_ground_sky
 	
-	add $t3, $zero, 14248
+	jal draw_coin
+	
+	add $t3, $zero, 14252
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
 	jal draw_mushroom
@@ -959,7 +1048,7 @@ main:
 main_loop:
 	la $t9, counter
 	lw $t7, 0($t9)
-	addi $t8, $zero, 2000
+	addi $t8, $zero, 200
 	bne $t7, $t8, cont3
 	
 	addi $t8, $zero, 0
@@ -970,19 +1059,21 @@ main_loop:
 	addi $t8, $zero, 0
 	bne $t5, $t8, else32
 	
+	addi $t8, $zero, 1
+	sw $t8, 0($t6)
+	
 	jal draw_ground_sky
 	j cont3
 	
 else32:	
+	la $t6, on
+	addi $t8, $zero, 0
+	sw $t8, 0($t6)
 	jal ground_sky_black
+	
 	#lw$t5, 0($t4)# $t5 = B[i]
 	#sw$t5, 0($t3)# A[i] = $t5
 cont3:
-	la $t9, counter
-	lw $t7, 0($t9)
-	
-	addi $t8, $t7, 1
-	sw $t8, 0($t9)
 	
 	jal track_gravity
 	jal check_char_move
@@ -1000,6 +1091,13 @@ cont3:
 	#jal draw_m2
 	
 cont1:	
+	
+	la $t9, counter
+	lw $t7, 0($t9)
+	
+	addi $t8, $t7, 1
+	sw $t8, 0($t9)
+	
 	add $t3, $zero, $s1
 	addi $sp, $sp, -4
 	sw $t3, 0($sp)
