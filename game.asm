@@ -63,7 +63,7 @@
 coin_spawns:     .word 
 counter: 	 .word 0:1
 on: 	 .word 1:1
-L_R:	.word 1:1 # 1 for right and 0 for left
+win_count: 	 .word 0:1
 
 
 .text
@@ -79,12 +79,9 @@ j main
 draw_coin:
 	li $t0, BASE_ADDRESS
 	
-	
-	la $t6, L_R
-	lw $t5, 0($t6)
-	
+
 	addi $t8, $zero, 0
-	bne $t5, $t8, else5
+	bne $s7, $t8, else5
 	
 	li $t1, gold
 	#on the right 14252
@@ -92,6 +89,12 @@ draw_coin:
 	sw $t1, 14556($t0)
 	sw $t1, 14560($t0)
 	sw $t1, 14552($t0)
+	
+	li $t1, black
+	sw $t1, 14124($t0)
+	sw $t1, 14380($t0)
+	sw $t1, 14384($t0)
+	sw $t1, 14376($t0)
 	
 	j cont5
 	
@@ -103,8 +106,13 @@ else5:
 	sw $t1, 14384($t0)
 	sw $t1, 14376($t0)
 	
+	li $t1, black
+	sw $t1, 14300($t0)
+	sw $t1, 14556($t0)
+	sw $t1, 14560($t0)
+	sw $t1, 14552($t0)
 	
-
+	
 cont5:
 	jr $ra
 	
@@ -918,7 +926,7 @@ check_player_hit:
 	
 	beq $t1, $t6, p_hit_boost
 	
-	addi $t5, $s0, -8 #Spot 3 - coin
+	addi $t5, $s0, 248 #Spot 1 - coin
 	add  $t5, $t5, $t0
 	
 	li $t1, gold
@@ -926,10 +934,10 @@ check_player_hit:
 	
 	beq $t1, $t6, p_hit_coin
 	
-	addi $t5, $s0, 8 #Spot 3 - coin
+	addi $t5, $s0, 264 #Spot 2 - coin
 	add  $t5, $t5, $t0
 	
-	li $t1, coin
+	li $t1, gold
 	lw $t6, 0($t5)
 	
 	beq $t1, $t6, p_hit_coin
@@ -940,15 +948,22 @@ p_hit_coin:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
-	la $t6, L_R
-	lw $t5, 0($t6)
 	addi $t8, $zero, 1
 	
-	bne $t8, $t5, elseer
-	sw $t8, 0($t6)
+	bne $t8, $s7, elseer
+	
+	
+	addi $s7, $zero, 0
+	jal draw_coin
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
+	
 elseer:	
-	addi $t8, $zero, 0
-	sw $t8, 0($t6)
+	
+	addi $s7, $zero, 1
 	
 	jal draw_coin
 	
@@ -988,6 +1003,7 @@ main:
 	
 	jal draw_ground_sky
 	
+	addi $s7, $zero, 1 # 1 for right side, 0 for left side
 	jal draw_coin
 	
 	add $t3, $zero, 14252
@@ -1046,9 +1062,10 @@ main:
 	
 	
 main_loop:
+	
 	la $t9, counter
 	lw $t7, 0($t9)
-	addi $t8, $zero, 200
+	addi $t8, $zero, 300
 	bne $t7, $t8, cont3
 	
 	addi $t8, $zero, 0
@@ -1158,10 +1175,12 @@ cont1:
 	jal meteor_fall
 	add $s1, $s1, 256
 	
+	
 	jal check_player_hit
 	
-	
-cont2:	jal check_lava_death
+cont2:	
+
+	jal check_lava_death
 	
 	li $v0, 32
 	li $a0, 40 # 40 recommeneded
