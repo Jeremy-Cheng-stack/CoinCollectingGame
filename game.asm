@@ -29,12 +29,12 @@
 
 
 #add-ons
-#(1)Disappear platforms... the flying sky platform moves around where the player needs to reach through a jump if right above.
+#(1)Disappear platforms... the flying sky platform moves around where the player needs to reach through a jump if right above. DONE
 #		     the player is not connected to the platform, the player needs to keep adjsting movement keys to keep up with the platform
-#(1)win cond.... the player must survive for 1 min
-#(1)lose cond... the player gets hit by meteor or falls into lava  !!!!!!
-#(2)Moving objects... metoer fall from the sky which the player has to avoid  !!!!!
-#(2) Track score
+#(1)win cond.... the player must survive for 1 min DONE
+#(1)lose cond... the player gets hit by meteor or falls into lava  DONE
+#(2)Moving objects... metoer fall from the sky which the player has to avoid  DONE
+#(2) Track score DONE
 #(2) Pick up effects
 
 .eqv  BASE_ADDRESS 0x10008000
@@ -992,7 +992,7 @@ check_player_hit:
 	
 	beq $t1, $t6, p_hit_coin
 	
-	addi $t5, $s0, 252 #Spot 5 - coin
+	addi $t5, $s0, 268 #Spot 5 - coin
 	add  $t5, $t5, $t0
 	
 	li $t1, gold
@@ -1000,7 +1000,7 @@ check_player_hit:
 	
 	beq $t1, $t6, p_hit_coin
 	
-	addi $t5, $s0, 260 #Spot 6 - coin
+	addi $t5, $s0, 244 #Spot 6 - coin
 	add  $t5, $t5, $t0
 	
 	li $t1, gold
@@ -1231,7 +1231,7 @@ main_loop:
 	
 	la $t9, counter
 	lw $t7, 0($t9)
-	addi $t8, $zero, 300
+	addi $t8, $zero, 250
 	bne $t7, $t8, cont3
 	
 	addi $t8, $zero, 0
@@ -1257,7 +1257,6 @@ else32:
 	#lw$t5, 0($t4)# $t5 = B[i]
 	#sw$t5, 0($t3)# A[i] = $t5
 cont3:
-	
 	jal track_gravity
 	jal check_char_move
 	
