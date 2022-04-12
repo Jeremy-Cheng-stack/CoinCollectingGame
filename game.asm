@@ -22,7 +22,8 @@
 # 
 #
 # Link to video demonstration for final submission:
-# - (insert YouTube / MyMedia / other URL here). Make sure we can view it! #
+# - YOUTUBE link
+#    https://youtu.be/GLySo5_rtF8
 # Are you OK with us sharing the video with people outside course staff?
 # - yes 
 #
